@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter
+  namespace: data-science
+  labels:
+    app: chatbook
+    env: poc
+    group: data-science
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatbook
+  template:
+    metadata:
+      labels:
+        app: chatbook
+    spec:
+      securityContext:
+
+        fsGroup: 1001
+        runAsUser: 1001
+        runAsGroup: 1001
+      containers:
+      - name: chatbook-app
+        image: ynamadi676/chatbook:latest
+        ports:
+          - containerPort: 8888
+        volumeMounts:
+          - mountPath: /home/jovyan
+            name: chatbot
+          - mountPath: /opt/conda/envs
+            name: chatbot
+        args: ["start-notebook.sh", "--PasswordIdentityProvider.hashed_password='argon2:$argon2id$v=19$m=10240,t=10,p=8$jrC9ux0SABiT7Zn0Qs2CPA$1KJ5UaNTkMq/TQuELkmboIcr/z96P5x6sQODM6tQu3k'"]
+      imagePullSecrets:
+        - name: regcred
+      volumes:
+        - name: chatbot
+          persistentVolumeClaim:
+            claimName: jupyter-pv-claim
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
